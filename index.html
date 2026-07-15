@@ -2319,6 +2319,7 @@
       ]
     };
     const STORAGE_KEY = 'cityuStudentPortalDB.v1';
+    const SESSION_KEY = 'cityuStudentPortalSession.v1';
     function saveDB() {
       const payload = {
         users: db.users,
@@ -2355,6 +2356,29 @@
 
     function $(id) {
       return document.getElementById(id);
+    }
+    function saveSession(userId) {
+      localStorage.setItem(SESSION_KEY, userId);
+    }
+    function clearSession() {
+      localStorage.removeItem(SESSION_KEY);
+    }
+    function restoreSession() {
+      const userId = localStorage.getItem(SESSION_KEY);
+      if (!userId) return false;
+      const user = db.users.find(u => u.id === userId);
+      if (!user) {
+        clearSession();
+        return false;
+      }
+      currentUser = user;
+      seedAcademicRecords(currentUser.id);
+      currentUser = db.users.find(u => u.id === userId) || currentUser;
+      saveDB();
+      viewLogin(false);
+      renderAll();
+      switchPage('Dashboard');
+      return true;
     }
     function decorateSidebarIcons() {
       const icons = {
@@ -2715,6 +2739,7 @@
       currentUser = user;
       seedAcademicRecords(currentUser.id);
       currentUser = db.users.find(u => u.id === id) || currentUser;
+      saveSession(currentUser.id);
       saveDB();
       viewLogin(false);
       renderAll();
@@ -2754,6 +2779,7 @@
       event.stopPropagation();
       closeProfileMenu();
       currentUser = null;
+      clearSession();
       loginPass.value = '';
       viewLogin(true);
       toast('Logged out successfully.');
@@ -3450,6 +3476,7 @@
       toast('Profile updated.');
       renderAll();
     }
+    restoreSession();
     if ('serviceWorker' in navigator && location.protocol !== 'file:') {
       window.addEventListener('load', () => {
         navigator.serviceWorker.register('./sw.js').catch(error => {
